@@ -229,10 +229,32 @@ const BvhViewer: React.FC<BvhViewerProps> = ({ bvhContent, viewerState, onStateU
 
       // 2. Setup Animation Mixer with SkinnedMesh Trick
       // This is crucial to avoid "Can not bind to bones" errors if the root is not a SkinnedMesh
+      // Fix for "Cannot read properties of undefined (reading 'getX')" crash in Three.js r160+:
+      // SkinnedMesh geometry MUST have skinIndex and skinWeight attributes, even if not rendered.
+      const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+      const positionAttr = geometry.attributes.position;
+      const vertexCount = positionAttr.count;
+      
+      const skinIndices = new Float32Array(vertexCount * 4);
+      const skinWeights = new Float32Array(vertexCount * 4);
+      
+      // Bind everything to bone 0 with weight 1
+      for (let i = 0; i < vertexCount; i++) {
+        skinIndices[i * 4] = 0;
+        skinWeights[i * 4] = 1;
+        skinWeights[i * 4 + 1] = 0;
+        skinWeights[i * 4 + 2] = 0;
+        skinWeights[i * 4 + 3] = 0;
+      }
+      
+      geometry.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndices, 4));
+      geometry.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeights, 4));
+
       const dummyMesh = new THREE.SkinnedMesh(
-        new THREE.BoxGeometry(0.1, 0.1, 0.1), 
+        geometry, 
         new THREE.MeshBasicMaterial({ visible: false })
       );
+      dummyMesh.frustumCulled = false; // Disable frustum culling to prevent bounding sphere calc issues
       dummyMesh.bind(skeleton);
       dummyMesh.add(rootBone);
       modelGroup.add(dummyMesh);
