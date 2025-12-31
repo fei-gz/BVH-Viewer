@@ -1,0 +1,5 @@
+{
+  "name": "BVH Motion Viewer",
+  "description": "A professional 3D motion capture data viewer supporting BVH files with skeleton visualization.",
+  "requestFramePermissions": []
+}
